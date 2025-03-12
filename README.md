@@ -8,7 +8,6 @@ The CureNow Chatbot is a Flask-based application designed to provide medical inf
 -   **Retrieval-Augmented Generation (RAG)**: Uses Pinecone for vector storage and Google Gemini for generating responses, enhancing the quality and relevance of the chatbot's answers.
 -   **Spell Checker**: Corrects user input to ensure accurate and relevant responses.
 -   **Image-Based Disease Prediction**: Integrates a PyTorch-based multi-head model for predicting diseases from medical images (brain, lung, and skin).
--   **Appointment Booking**: Allows users to book appointments with doctors.
 -   **Chat History**: Stores and retrieves chat history using a PostgreSQL database.
 -   **Chat Export**: Exports chat history in various formats (TXT, DOCX, PDF).
 
@@ -143,16 +142,12 @@ The CureNow Chatbot is a Flask-based application designed to provide medical inf
     -   Select the appropriate task (brain, lung, or skin).
     -   The chatbot will predict the disease based on the image.
 
-4.  **Appointment Booking:**
 
-    -   Fill out the appointment booking form with the required details.
-    -   Submit the form to book an appointment.
-
-5.  **Chat History:**
+4.  **Chat History:**
 
     -   The chat history is stored in the database and displayed on the main page.
 
-6.  **Export Chat:**
+5.  **Export Chat:**
 
     -   Click the "Export Chat" button to export the chat history in TXT, DOCX, or PDF format.
 
@@ -161,7 +156,6 @@ The CureNow Chatbot is a Flask-based application designed to provide medical inf
 -   `/`: Renders the main page with the chat interface.
 -   `/get` (POST): Handles text-based chat messages.
 -   `/get_response` (POST): Handles both text and image-based requests.
--   `/book_appointment` (POST): Books an appointment with a doctor.
 -   `/clear_chats` (POST): Clears all chat history from the database.
 -   `/export_chat` (GET): Exports the chat history in various formats.
 
