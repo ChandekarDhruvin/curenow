@@ -37,8 +37,8 @@ The CureNow Chatbot is a Flask-based application designed to provide medical inf
 1.  **Clone the repository:**
 
     ```
-    git clone <repository_url>
-    cd <repository_directory>
+    git clone https://github.com/ChandekarDhruvin/curenow.git
+
     ```
 
 2.  **Create a virtual environment:**
