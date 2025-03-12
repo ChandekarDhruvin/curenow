@@ -82,7 +82,7 @@ The CureNow Chatbot is a Flask-based application designed to provide medical inf
     python app.py
     ```
 
-    The application will start running on `http://127.0.0.1:5000/` or a similar address.
+    The application will start running on `http://127.0.0.1:8000/` or a similar address.
 
 ## Database Setup
 
