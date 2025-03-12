@@ -359,31 +359,6 @@ def get_response():
     return jsonify({"error": "No message or image provided."}), 400
 
 
-
-@app.route("/book_appointment", methods=["POST"])
-def book_appointment():
-    session_id = request.cookies.get("session_id", secrets.token_hex(16))
-
-    # Collect the form data
-    patient_name = request.form.get("patient_name")
-    age = request.form.get("age")
-    gender = request.form.get("gender")
-    symptoms = request.form.get("symptoms")
-    doctor_id = request.form.get("doctor_id")
-    appointment_date = request.form.get("appointment_date")
-
-    # Validate input fields
-    if not patient_name or not age or not gender or not symptoms or not doctor_id or not appointment_date:
-        return jsonify({"error": "Please provide all details to book the appointment."}), 400
-
-    # Save the appointment to the database
-    save_appointment(patient_name, age, gender, symptoms, doctor_id, appointment_date)
-
-    bot_response = f"Your appointment with Doctor ID {doctor_id} has been successfully booked for {appointment_date}. See you soon!"
-    save_chat(session_id, "Book appointment", bot_response)
-
-    return jsonify({"user": "Book appointment", "bot": bot_response})
-
 @app.route("/clear_chats", methods=["POST"])
 def clear_chats():
     return jsonify({"success": clear_all_chats()}), 200
