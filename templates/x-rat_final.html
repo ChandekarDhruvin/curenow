@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Medical Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.1.0/docx.umd.min.js"></script> -->
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <style>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #839ac0;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(45deg, #3b82f6, #60a5fa);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(45deg, #2563eb, #3b82f6);
+        }
+
+        .file-name-display {
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+        }
+
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            z-index: 100;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #0f172a;
+            color: white;
+            text-align: center;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: opacity 0.3s ease;
+            width: max-content;
+            max-width: 300px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #0f172a transparent transparent transparent;
+        }
+
+        /* Animations */
+        @keyframes glowPulse {
+            0% {
+                box-shadow: 0 0 5px #10b981, 0 0 10px #10b981;
+            }
+
+            50% {
+                box-shadow: 0 0 15px #10b981, 0 0 20px #10b981;
+            }
+
+            100% {
+                box-shadow: 0 0 5px #10b981, 0 0 10px #10b981;
+            }
+        }
+
+        @keyframes botPulseWave {
+            0% {
+                box-shadow: 0 0 0 0 rgba(45, 212, 191, 0.7);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 0 10px rgba(45, 212, 191, 0.3);
+                transform: scale(1.05);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(45, 212, 191, 0);
+                transform: scale(1);
+            }
+        }
+
+        @keyframes userHeartbeat {
+            0% {
+                transform: scale(1);
+            }
+
+            10% {
+                transform: scale(1.1);
+            }
+
+            20% {
+                transform: scale(1);
+            }
+
+            30% {
+                transform: scale(1.08);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes zoomIn {
+            0% {
+                transform: scale(0.5) translateX(-100px);
+                opacity: 0;
+            }
+
+            80% {
+                transform: scale(1.1) translateX(10px);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1) translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes zoomInRight {
+            0% {
+                transform: scale(0.5) translateX(100px);
+                opacity: 0;
+            }
+
+            80% {
+                transform: scale(1.1) translateX(-10px);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1) translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.03);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .message-container {
+            animation-duration: 0.6s;
+            animation-fill-mode: both;
+        }
+
+        .message-container.user {
+            animation-name: zoomInRight;
+        }
+
+        .message-container.bot {
+            animation-name: zoomIn;
+        }
+
+        .chat-bubble {
+            animation: pulse 0.5s ease-in-out;
+            transition: box-shadow 0.3s ease;
+        }
+
+        .chat-bubble:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .header-avatar {
+            background: linear-gradient(135deg, #064e3b, #10b981);
+            border: 3px solid #10b981;
+            animation: glowPulse 2s infinite ease-in-out;
+        }
+
+        .header-avatar::before {
+            content: "\f0f9";
+            /* Medical cross */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #ffffff;
+            font-size: 24px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .bot-avatar {
+            background: linear-gradient(135deg, #0d9488, #2dd4bf);
+            border: 3px solid #2dd4bf;
+            animation: botPulseWave 2s infinite ease-out;
+        }
+
+        .bot-avatar::before {
+            content: "\f21e";
+            /* Heartbeat monitor icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #ffffff;
+            font-size: 24px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, #6b7280, #8b5cf6);
+            border: 3px solid #8b5cf6;
+            animation: userHeartbeat 2s infinite ease-in-out;
+        }
+
+        .user-avatar::before {
+            content: "\f007";
+            /* User icon */
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #ffffff;
+            font-size: 24px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .avatar:hover {
+            transform: scale(1.15);
+        }
+
+        #threejs-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .chat-container {
+            background: linear-gradient(to bottom, rgba(17, 24, 39, 0.9) 70%, transparent 100%);
+            position: relative;
+            z-index: 10;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #messageContainer {
+            flex: 1;
+            max-height: 40vh;
+            background: transparent;
+            overflow: auto;
+        }
+
+        .input-section {
+            padding: 1rem;
+            background: rgba(31, 41, 55, 0.9);
+            border-top: 1px solid #374151;
+        }
+
+        /* Dropdown Styles */
+        .export-group {
+            position: relative;
+        }
+
+        .dropdown-menu {
+            display: none;
+            /* Hidden by default */
+            position: absolute;
+            right: 0;
+            top: 100%;
+            /* Directly below the button */
+            margin-top: 0;
+            /* Remove gap */
+            width: 140px;
+            background-color: #1f2937;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border: 1px solid #374151;
+            z-index: 20;
+        }
+
+        .dropdown-menu a {
+            display: block;
+            padding: 8px 16px;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown-menu a:hover {
+            background-color: #374151;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-700 font-poppins text-white flex items-center justify-center min-h-screen p-4">
+    <div id="threejs-container"></div>
+    <div class="w-full max-w-3xl chat-container rounded-2xl shadow-2xl overflow-hidden border border-gray-800">
+        <!-- Header -->
+        <div class="bg-gray-800 p-4 flex justify-between items-center rounded-t-2xl border-b border-gray-700">
+            <div class="flex items-center space-x-3">
+                <div class="relative">
+                    <div class="avatar header-avatar"></div>
+                    <span
+                        class="absolute bottom-1 right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800 animate-pulse"></span>
+                </div>
+                <div>
+                    <h2 class="text-lg font-semibold text-blue-400"><i class="fas fa-stethoscope mr-2"></i>Medical
+                        Assistant Pro</h2>
+                    <p class="text-xs text-gray-400">Certified Health Info | 24/7 Available</p>
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <div class="relative export-group">
+                    <button id="exportBtn"
+                        class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-3 py-1 rounded-full hover:from-blue-700 hover:to-blue-600 transition flex items-center shadow-md">
+                        <i class="fas fa-download mr-1"></i> Export
+                    </button>
+                    <div class="dropdown-menu" id="exportDropdown">
+                        <a href="#" class="export-chat" data-format="txt"><i class="far fa-file-alt mr-2"></i>TXT</a>
+                        <a href="#" class="export-chat" data-format="docx"><i class="far fa-file-word mr-2"></i>Word</a>
+                        <a href="#" class="export-chat" data-format="pdf"><i class="far fa-file-pdf mr-2"></i>PDF</a>
+                    </div>
+                </div>
+                <button id="clearChats"
+                    class="bg-gradient-to-r from-red-600 to-red-500 text-white px-3 py-1 rounded-full hover:from-red-700 hover:to-red-600 transition flex items-center shadow-md">
+                    <i class="fas fa-trash mr-1"></i> Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Body -->
+        <div id="messageContainer" class="p-4 overflow-y-auto"></div>
+
+        <!-- Input Section -->
+        <div class="input-section">
+            <form id="messageForm" class="flex items-center space-x-2 mb-3">
+                <div class="relative flex-1">
+                    <input type="text" id="textInput" name="msg" placeholder="Type your medical question or symptoms..."
+                        class="w-full bg-gray-900 text-white rounded-full py-2 px-4 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 border border-gray-700 transition-all duration-300 hover:bg-gray-800">
+                    <i class="fas fa-comment-alt absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"></i>
+                </div>
+                <button type="submit"
+                    class="bg-gradient-to-r from-blue-600 to-blue-500 text-white p-2 rounded-full hover:from-blue-700 hover:to-blue-600 transition shadow-md">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+                <button type="button" id="voiceBtn"
+                    class="bg-gradient-to-r from-teal-600 to-teal-500 text-white p-2 rounded-full hover:from-teal-700 hover:to-teal-600 transition shadow-md">
+                    <i class="fas fa-microphone"></i>
+                </button>
+            </form>
+            <div class="bg-gray-900 p-3 rounded-lg border border-gray-700">
+                <label class="text-sm text-gray-400"><i class="fas fa-file-medical mr-2"></i>Upload Medical
+                    Image</label>
+                <form id="upload-form" method="POST" enctype="multipart/form-data"
+                    class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2 mt-2">
+                    <div class="relative flex-1">
+                        <input type="file" class="custom-file-input hidden" id="xray_image" name="file"
+                            accept="image/*">
+                        <label for="xray_image"
+                            class="tooltip custom-file-label bg-gray-800 text-gray-400 rounded-full py-2 px-4 w-full block cursor-pointer border border-gray-700 hover:bg-gray-700 transition">
+                            <span class="file-name-display">Choose image...</span>
+                            <span class="tooltip-text hidden" id="full-filename">Choose image...</span>
+                        </label>
+                    </div>
+                    <select
+                        class="form-control bg-gray-800 text-white rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-700 transition-all duration-300 hover:bg-gray-700"
+                        id="task" name="task">
+                        <option value="brain">Brain Scan</option>
+                        <option value="lung">Lung Scan</option>
+                        <option value="skin">Skin Lesion</option>
+                    </select>
+                    <button id="upload-button" type="submit"
+                        class="bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-full py-2 px-4 hover:from-blue-700 hover:to-blue-600 transition flex items-center whitespace-nowrap shadow-md">
+                        <i class="fas fa-microscope mr-2"></i>Analyze
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Three.js Background
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a0a);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.getElementById('threejs-container').appendChild(renderer.domElement);
+
+        const ambientLight = new THREE.AmbientLight(0x1a1a1a, 2);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0x60a5fa, 5, 100);
+        pointLight.position.set(10, 15, 10);
+        scene.add(pointLight);
+
+        const helixGroup = new THREE.Group();
+        const helixRadius = 2.5;
+        const helixHeight = 25;
+        const helixMaterial = new THREE.MeshPhongMaterial({ color: 0x39ff14, shininess: 150, emissive: 0x39ff14, emissiveIntensity: 0.3 });
+        const strandMaterial = new THREE.LineBasicMaterial({ color: 0x39ff14, transparent: true, opacity: 0.5 });
+
+        const helixPoints = [];
+        for (let i = 0; i < helixHeight * 2; i += 0.2) {
+            const x1 = helixRadius * Math.cos(i);
+            const z1 = helixRadius * Math.sin(i);
+            const y1 = i - helixHeight / 2;
+            const sphereGeo = new THREE.SphereGeometry(0.25, 16, 16);
+            const sphere = new THREE.Mesh(sphereGeo, helixMaterial);
+            sphere.position.set(x1, y1, z1);
+            helixGroup.add(sphere);
+            helixPoints.push(new THREE.Vector3(x1, y1, z1));
+
+            const x2 = helixRadius * Math.cos(i + Math.PI);
+            const z2 = helixRadius * Math.sin(i + Math.PI);
+            const sphere2 = new THREE.Mesh(sphereGeo, helixMaterial);
+            sphere2.position.set(x2, y1, z2);
+            helixGroup.add(sphere2);
+            helixPoints.push(new THREE.Vector3(x2, y1, z2));
+
+            const strandGeo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(x1, y1, z1),
+                new THREE.Vector3(x2, y1, z2)
+            ]);
+            const strand = new THREE.Line(strandGeo, strandMaterial);
+            helixGroup.add(strand);
+        }
+        scene.add(helixGroup);
+
+        const brainGroup = new THREE.Group();
+        const brainGeo = new THREE.SphereGeometry(3, 32, 32);
+        const brainMaterial = new THREE.MeshPhongMaterial({ color: 0xff5555, emissive: 0xff5555, emissiveIntensity: 0.5, wireframe: true });
+        const brain = new THREE.Mesh(brainGeo, brainMaterial);
+        brain.position.set(10, 0, -5);
+        brainGroup.add(brain);
+
+        const neuralGeo = new THREE.BufferGeometry();
+        const neuralCount = 200;
+        const neuralPositions = new Float32Array(neuralCount * 3);
+        const neuralVelocities = new Float32Array(neuralCount * 3);
+        for (let i = 0; i < neuralCount * 3; i += 3) {
+            const theta = Math.random() * 2 * Math.PI;
+            const phi = Math.acos(2 * Math.random() - 1);
+            const r = Math.random() * 2.5;
+            neuralPositions[i] = r * Math.sin(phi) * Math.cos(theta) + 10;
+            neuralPositions[i + 1] = r * Math.sin(phi) * Math.sin(theta);
+            neuralPositions[i + 2] = r * Math.cos(phi) - 5;
+            neuralVelocities[i] = (Math.random() - 0.5) * 0.02;
+            neuralVelocities[i + 1] = (Math.random() - 0.5) * 0.02;
+            neuralVelocities[i + 2] = (Math.random() - 0.5) * 0.02;
+        }
+        neuralGeo.setAttribute('position', new THREE.BufferAttribute(neuralPositions, 3));
+        const neuralMaterial = new THREE.PointsMaterial({ color: 0xffff00, size: 0.1, transparent: true, opacity: 0.7 });
+        const neuralParticles = new THREE.Points(neuralGeo, neuralMaterial);
+        brainGroup.add(neuralParticles);
+        scene.add(brainGroup);
+
+        const cubesGroup = new THREE.Group();
+        const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0xff3333, emissive: 0xff3333, emissiveIntensity: 0.5 });
+        for (let i = 0; i < 15; i++) {
+            const cubeGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const cube = new THREE.Mesh(cubeGeo, cubeMaterial);
+            cube.position.set((Math.random() - 0.5) * 25, (Math.random() - 0.5) * 25, (Math.random() - 0.5) * 25);
+            cube.rotation.set(Math.random(), Math.random(), Math.random());
+            cubesGroup.add(cube);
+        }
+        scene.add(cubesGroup);
+
+        const particleGeo = new THREE.BufferGeometry();
+        const particleCount = 1000;
+        const positions = new Float32Array(particleCount * 3);
+        const velocities = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 100;
+            positions[i + 1] = (Math.random() - 0.5) * 100;
+            positions[i + 2] = (Math.random() - 0.5) * 100;
+            velocities[i] = (Math.random() - 0.5) * 0.01;
+            velocities[i + 1] = (Math.random() - 0.5) * 0.01;
+            velocities[i + 2] = (Math.random() - 0.5) * 0.01;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particleMaterial = new THREE.PointsMaterial({ color: 0x00b7eb, size: 0.15, transparent: true, opacity: 0.8 });
+        const particles = new THREE.Points(particleGeo, particleMaterial);
+        scene.add(particles);
+
+        const aiCoreGeo = new THREE.SphereGeometry(1.5, 32, 32);
+        const aiCoreMaterial = new THREE.MeshStandardMaterial({ color: 0x60a5fa, emissive: 0x60a5fa, emissiveIntensity: 1.5 });
+        const aiCore = new THREE.Mesh(aiCoreGeo, aiCoreMaterial);
+        aiCore.position.set(0, -2, 0);
+        scene.add(aiCore);
+
+        const gridHelper = new THREE.GridHelper(100, 50, 0x333333, 0x333333);
+        gridHelper.position.set(0, -20, 0);
+        scene.add(gridHelper);
+
+        camera.position.set(0, 5, 25);
+        camera.lookAt(0, 0, 0);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            helixGroup.rotation.y += 0.01;
+            brainGroup.rotation.y += 0.005;
+            cubesGroup.rotation.y += 0.005;
+            particles.rotation.y += 0.002;
+
+            const pos = particles.geometry.attributes.position.array;
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                pos[i] += velocities[i];
+                pos[i + 1] += velocities[i + 1];
+                pos[i + 2] += velocities[i + 2];
+                if (Math.abs(pos[i]) > 50) velocities[i] *= -1;
+                if (Math.abs(pos[i + 1]) > 50) velocities[i + 1] *= -1;
+                if (Math.abs(pos[i + 2]) > 50) velocities[i + 2] *= -1;
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            const neuralPos = neuralParticles.geometry.attributes.position.array;
+            for (let i = 0; i < neuralCount * 3; i += 3) {
+                neuralPos[i] += neuralVelocities[i];
+                neuralPos[i + 1] += neuralVelocities[i + 1];
+                neuralPos[i + 2] += neuralVelocities[i + 2];
+                const dist = Math.sqrt(
+                    (neuralPos[i] - 10) ** 2 +
+                    neuralPos[i + 1] ** 2 +
+                    (neuralPos[i + 2] + 5) ** 2
+                );
+                if (dist > 2.5) {
+                    neuralVelocities[i] *= -1;
+                    neuralVelocities[i + 1] *= -1;
+                    neuralVelocities[i + 2] *= -1;
+                }
+            }
+            neuralParticles.geometry.attributes.position.needsUpdate = true;
+
+            aiCore.scale.setScalar(1.2 + 0.1 * Math.sin(Date.now() * 0.005));
+
+            cubesGroup.children.forEach(cube => {
+                cube.rotation.x += 0.02;
+                cube.rotation.y += 0.02;
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+
+        $(document).ready(function () {
+            $("#upload-form").submit(function (event) {
+                event.preventDefault();
+                let fileInput = $("#xray_image")[0].files[0];
+
+                if (fileInput) {
+                    let reader = new FileReader();
+                    reader.onload = function (e) {
+                        // ✅ Append the uploaded image as a User message
+                        appendMessage(`<img src="${e.target.result}" class="w-40 h-40 rounded-lg shadow-md border border-gray-600">`, true);
+
+                        // Simulate a delay for bot prediction
+                        setTimeout(function () {
+                            // appendMessage("🩺 Predicted Disease: Pneumonia", false);
+                        }, 2000);
+                    };
+                    reader.readAsDataURL(fileInput);
+                }
+            });
+
+            function appendMessage(message, isUser) {
+                let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                let messageHtml = isUser
+                    ? `<div class="flex justify-end mb-4 items-start message-container user">
+                <div class="chat-bubble bg-gradient-to-r from-blue-600 to-blue-500 text-white p-3 rounded-2xl rounded-br-none max-w-[70%] shadow-lg mr-3">
+                    ${message}
+                    <span class="block text-xs opacity-75 mt-1"><i class="far fa-clock mr-1"></i>${timeNow} <i class="fas fa-check-double ml-1 text-blue-200 animate-pulse"></i></span>
+                </div>
+                <div class="avatar user-avatar"></div>
+            </div>`
+                    : `<div class="flex justify-start mb-4 items-start message-container bot">
+                <div class="avatar bot-avatar"></div>
+                <div class="chat-bubble bg-gray-800 text-white p-3 rounded-2xl rounded-bl-none max-w-[70%] shadow-lg border-l-4 border-blue-500 ml-3">
+                    ${message}
+                    <span class="block text-xs opacity-75 mt-1"><i class="far fa-clock mr-1"></i>${timeNow} <i class="fas fa-robot ml-1 text-blue-400"></i></span>
+                </div>
+            </div>`;
+
+                $("#messageContainer").append(messageHtml).scrollTop($("#messageContainer")[0].scrollHeight);
+                saveChatHistory();
+            }
+
+
+            function saveChatHistory() {
+                localStorage.setItem("chatHistory", $("#messageContainer").html());
+            }
+
+            function loadChatHistory() {
+                let chatHistory = localStorage.getItem("chatHistory");
+                if (chatHistory) $("#messageContainer").html(chatHistory);
+                // else appendMessage("👨‍⚕️ Welcome to Medical Assistant Pro! How can I assist you today?", false);
+            }
+
+            function clearChat() {
+                $.post("/clear_chats", function (response) {
+                    if (response.success) {
+                        localStorage.removeItem("chatHistory");
+                        $("#messageContainer").empty();
+                        // appendMessage("👨‍⚕️ Chat cleared! How can I assist you now?", false);
+                    }
+                }).fail(function () {
+                    appendMessage("Error clearing chat. Please try again.", false);
+                });
+            }
+
+            $("#clearChats").click(function () {
+                if (confirm("Clear all chat history?")) clearChat();
+            });
+
+            loadChatHistory();
+
+            $("#messageForm").submit(function (event) {
+                event.preventDefault();
+                let text = $("#textInput").val().trim();
+                if (!text) return;
+
+                appendMessage(text, true);
+                $("#textInput").val("");
+
+                let loadingHtml = `<div id="loading" class="flex justify-start mb-4 items-start message-container bot">
+                    <div class="avatar bot-avatar"></div>
+                    <div class="chat-bubble bg-gray-800 p-3 rounded-2xl rounded-bl-none max-w-[70%] shadow-lg border-l-4 border-blue-500 ml-3">
+                        <i class="fas fa-circle-notch fa-spin mr-2 text-blue-400"></i>Processing...
+                    </div>
+                </div>`;
+                $("#messageContainer").append(loadingHtml).scrollTop($("#messageContainer")[0].scrollHeight);
+
+                $.post("/get_response", { msg: text }, function (data) {
+                    $("#loading").remove();
+                    appendMessage(data.bot, false);
+                }).fail(function () {
+                    $("#loading").remove();
+                    appendMessage("Connection issue. Please try again.", false);
+                });
+            });
+
+            // Export Dropdown Functionality
+            const $exportGroup = $('.export-group');
+            const $exportDropdown = $('#exportDropdown');
+
+            $exportGroup.on('mouseenter', function () {
+                $exportDropdown.stop().slideDown(200);
+            });
+
+            $exportGroup.on('mouseleave', function () {
+                $exportDropdown.stop().slideUp(200);
+            });
+
+            $(".export-chat").click(function (e) {
+                e.preventDefault(); // Prevent default link behavior
+                const format = $(this).data("format");
+                exportChat(format);
+            });
+
+            function exportChat(format) {
+                const chatContent = $("#messageContainer").clone();
+                if (!chatContent.html().trim()) {
+                    appendMessage("No chat history to export.", false);
+                    return;
+                }
+
+                // Extract user and bot messages (without time)
+                let messages = [];
+                chatContent.find(".message-container").each(function () {
+                    let isUser = $(this).hasClass("user");
+                    let text = $(this).find(".chat-bubble").clone().children().remove().end().text().trim(); // Removes time
+                    if (text) {
+                        messages.push(`${isUser ? "User:" : "Bot:"} ${text}`);
+                    }
+                });
+
+                let formattedText = messages.join("\n\n"); // Separate messages properly
+
+                switch (format) {
+                    case "txt":
+                        downloadFile("chat_history.txt", formattedText, "text/plain");
+                        break;
+
+                    case "docx":
+                        exportAsDocx(messages);
+                        break;
+
+                    case "pdf":
+                        exportAsPDF(messages);
+                        break;
+
+                    default:
+                        appendMessage("Unsupported format.", false);
+                }
+            }
+
+            function downloadFile(filename, content, mimeType) {
+                const blob = new Blob([content], { type: mimeType });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // ✅ DOCX Export Function with Better Error Handling
+            function exportAsDocx(messages) {
+                const { Document, Packer, Paragraph, TextRun } = window.docx;
+                const doc = new Document({
+                    sections: [{
+                        properties: {},
+                        children: messages.map(msg => new Paragraph({
+                            children: [new TextRun(msg)]
+                        }))
+                    }]
+                });
+
+                Packer.toBlob(doc).then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "chat_history.docx";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }).catch(error => {
+                    console.error("Export error:", error);
+                    appendMessage("Failed to export DOCX.", false);
+                });
+            }
+
+            // Example usage - you'd call this with your chat messages
+            // exportAsDocx(["Message 1", "Message 2", "Message 3"]);
+
+
+            // ✅ PDF Export Fix (Without Time)
+            function exportAsPDF(messages) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                let yPos = 10; // Start position
+
+                doc.setFont("helvetica");
+                doc.setFontSize(12);
+
+                messages.forEach(msg => {
+                    let splitText = doc.splitTextToSize(msg, 180);
+                    doc.text(splitText, 10, yPos);
+                    yPos += splitText.length * 7; // Adjust line spacing
+                });
+
+                doc.save("chat_history.pdf");
+            }
+
+
+            if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.lang = 'en-US';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = function () {
+                    $("#voiceBtn").html('<i class="fas fa-spinner fa-spin"></i>').removeClass('bg-gradient-to-r from-teal-600 to-teal-500').addClass('bg-gradient-to-r from-red-600 to-red-500');
+                };
+
+                recognition.onend = function () {
+                    $("#voiceBtn").html('<i class="fas fa-microphone"></i>').removeClass('bg-gradient-to-r from-red-600 to-red-500').addClass('bg-gradient-to-r from-teal-600 to-teal-500');
+                };
+
+                recognition.onresult = function (event) {
+                    $("#textInput").val(event.results[0][0].transcript);
+                    setTimeout(() => $("#messageForm").submit(), 300);
+                };
+
+                recognition.onerror = function (event) {
+                    $("#voiceBtn").html('<i class="fas fa-microphone"></i>').removeClass('bg-gradient-to-r from-red-600 to-red-500').addClass('bg-gradient-to-r from-teal-600 to-teal-500');
+                    if (event.error !== 'no-speech') appendMessage("Microphone access failed. Check permissions.", false);
+                };
+
+                $("#voiceBtn").click(function () {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error("Recognition error:", e);
+                    }
+                });
+            } else {
+                $("#voiceBtn").addClass('opacity-50 cursor-not-allowed').attr('title', 'Speech not supported');
+            }
+
+            $('#upload-form').on('submit', function (e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+
+                if (!$('#xray_image').val()) {
+                    appendMessage("Please select an image to analyze.", false);
+                    return;
+                }
+
+                appendMessage("Analyzing your medical image...", false);
+
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        if (response.bot) appendMessage(response.bot, false);
+                        if (response.image) {
+                            let imageUrl = `data:image/jpeg;base64,${response.image}`;
+                            let taskType = $('#task option:selected').text();
+                            let imageHtml = `<div class="flex justify-start mb-4 items-start message-container bot">
+                                <div class="avatar bot-avatar"></div>
+                                <div class="chat-bubble bg-gray-800 text-white p-3 rounded-2xl rounded-bl-none max-w-[70%] shadow-lg border-l-4 border-blue-500 ml-3">
+                                    <span class="inline-block bg-blue-900 text-xs px-2 py-1 rounded-full mb-2"><i class="fas fa-tags mr-1"></i>${taskType}</span>
+                                    <img src="${imageUrl}" class="w-64 h-auto rounded-lg border border-gray-700 shadow-md" alt="Medical image">
+                                    <span class="block text-xs opacity-75 mt-1"><i class="far fa-clock mr-1"></i>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} <i class="fas fa-image ml-1 text-blue-400"></i></span>
+                                </div>
+                            </div>`;
+                            $("#messageContainer").append(imageHtml).scrollTop($("#messageContainer")[0].scrollHeight);
+                            saveChatHistory();
+                        }
+                        $('#xray_image').val('');
+                        $('.file-name-display').text('Choose image...');
+                        $('#full-filename').text('Choose image...').addClass('hidden');
+                    },
+                    error: function () {
+                        appendMessage("Error processing image. Try again.", false);
+                        $('#xray_image').val('');
+                        $('.file-name-display').text('Choose image...');
+                        $('#full-filename').text('Choose image...').addClass('hidden');
+                    }
+                });
+            });
+
+            $('#xray_image').on('change', function () {
+                var fileName = $(this).val().split('\\').pop();
+                if (fileName) {
+                    $('.file-name-display').text(fileName.length > 20 ? fileName.substring(0, 18) + '...' : fileName);
+                    $('#full-filename').text(fileName).removeClass('hidden');
+                } else {
+                    $('.file-name-display').text('Choose image...');
+                    $('#full-filename').text('Choose image...').addClass('hidden');
+                }
+            });
+
+            $('.custom-file-label').hover(
+                function () {
+                    var fileName = $('#full-filename').text();
+                    if (fileName && fileName !== 'Choose image...') {
+                        $(this).find('.tooltip-text').show();
+                    }
+                },
+                function () {
+                    $(this).find('.tooltip-text').hide();
+                }
+            );
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,470 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Chatbot</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+    <style>
+        .msg_container_send {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 75%;
+        }
+        .msg_container {
+            background-color: #f1f1f1;
+            color: black;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 75%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-md-center mt-5">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header msg_head">
+                        <div class="d-flex bd-highlight">
+                            <div class="img_cont">
+                                <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img">
+                                <span class="online_icon"></span>
+                            </div>
+                            <div class="user_info">
+                                <span>Medical Chatbot</span>
+                                <p>Online</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body msg_card_body">
+                        {% for chat in chat_history %}
+                            <div class="d-flex justify-content-start mb-4">
+                                <div class="img_cont_msg">
+                                    <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                                </div>
+                                <div class="msg_container">
+                                    {{ chat.user | safe }}
+                                    <span class="msg_time">{{ chat.timestamp }}</span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end mb-4">
+                                <div class="msg_container_send">
+                                    {{ chat.bot | safe }}
+                                    <span class="msg_time_send">{{ chat.timestamp }}</span>
+                                </div>
+                                <div class="img_cont_msg">
+                                    <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="card-footer">
+                        <form id="upload-form" method="POST" enctype="multipart/form-data">
+                            <div class="input-group">
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="xray_image" name="xray_image">
+                                    <label class="custom-file-label" for="xray_image">Upload X-ray</label>
+                                </div>
+                                <select class="form-control" id="task" name="task">
+                                    <option value="brain">Brain</option>
+                                    <option value="lung">Lung</option>
+                                    <option value="skin">Skin</option>
+                                </select>
+                                <div class="input-group-append">
+                                    <button id="upload-button" type="submit" class="btn btn-primary">Upload</button>
+                                </div>
+                            </div>
+                        </form>
+                        <div class="input-group">
+                            <div class="input-group-append">
+                                <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+                            </div>
+                            <textarea name="" id="text_message" class="form-control type_msg" placeholder="Type your message..."></textarea>
+                            <div class="input-group-append">
+                                <button id="send_message" class="input-group-text send_btn"><i class="fas fa-location-arrow"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function(){
+            // Function to append message to chat window
+            function appendMessage(message, isUser) {
+                var messageClass = isUser ? 'd-flex justify-content-start mb-4' : 'd-flex justify-content-end mb-4';
+                var messageContainerClass = isUser ? 'msg_container' : 'msg_container_send';
+                var imgClass = isUser ? 'img_cont_msg' : 'img_cont_msg';
+                var imgSource = "https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg";
+                
+                var messageHtml = `
+                    <div class="${messageClass}">
+                        <div class="${imgClass}">
+                            <img src="${imgSource}" class="rounded-circle user_img_msg">
+                        </div>
+                        <div class="${messageContainerClass}">
+                            ${message}
+                            <span class="msg_time">Now</span>
+                        </div>
+                    </div>`;
+                $('.msg_card_body').append(messageHtml);
+                $('.msg_card_body').scrollTop($('.msg_card_body')[0].scrollHeight);  // Scroll to bottom
+            }
+    
+            // Handle image upload
+            $('#upload-form').on('submit', function(e){
+                e.preventDefault();  // Prevent the default form submission
+                var formData = new FormData(this);
+
+                $.ajax({
+                    url: '/get_response',  // The endpoint to handle image uploads
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if (response && response.bot) {
+                            appendMessage(response.bot, false);  // Append bot's response
+                        } else if (response && response.error) {
+                            alert('Error: ' + response.error);  // Display error message
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error:", error);
+                        alert('An error occurred: ' + error);  // Display a generic error message
+                    }
+                });
+            });
+    
+            // Handle text message sending
+            $('#send_message').click(function(){
+                var textMessage = $('#text_message').val();
+                if (textMessage.trim() !== '') {
+                    appendMessage(textMessage, true);  // Append user's message
+                    $('#text_message').val('');  // Clear the input field
+    
+                    $.ajax({
+                        url: '/get_response',  // The endpoint to handle text messages
+                        type: 'POST',
+                        data: {msg: textMessage},
+                        success: function(response) {
+                            if (response && response.bot) {
+                                appendMessage(response.bot, false);  // Append bot's response
+                            } else if (response && response.error) {
+                                alert('Error: ' + response.error);  // Display error message
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error:", error);
+                            alert('An error occurred: ' + error);  // Display a generic error message
+                        }
+                    });
+                }
+            });
+    
+            // Listen for Enter key press in the text input field
+            $('#text_message').keypress(function(e) {
+                if (e.which == 13) {  // 13 is the Enter key code
+                    $('#send_message').click();  // Trigger the send button click event
+                    return false;  // Prevent the default form submission
+                }
+            });
+    
+            // Automatically scroll to the bottom of the chat window
+            $('.msg_card_body').scrollTop($('.msg_card_body')[0].scrollHeight);
+        });
+    </script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Medical Chatbot</title>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}"/>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
+        <style>
+            .msg_container_send {
+                background-color: #007bff;
+                color: white;
+                padding: 10px;
+                border-radius: 10px;
+                max-width: 75%;
+            }
+            .msg_container {
+                background-color: #f1f1f1;
+                color: black;
+                padding: 10px;
+                border-radius: 10px;
+                max-width: 75%;
+            }
+    
+            .uploaded-image {
+                max-width: 200px;
+                height: auto;
+                margin-top: 5px;
+            }
+    
+        </style>
+    </head>
+    <body>
+        <div class="container-fluid h-100">
+            <div class="row justify-content-center h-100">
+                <div class="col-md-8 col-xl-6 chat">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div class="d-flex">
+                                <div class="img_cont">
+                                    <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img">
+                                    <span class="online_icon"></span>
+                                                            </div>
+                                <div class="user_info">
+                                    <span>Medical Chatbot</span>
+                                    <p>Online</p>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-success dropdown-toggle" type="button" data-toggle="dropdown">
+                                        <i class="fas fa-download"></i> Export
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item export-chat" data-format="txt">Export as TXT</a>
+                                        <a class="dropdown-item export-chat" data-format="docx">Export as Word</a>
+                                        <a class="dropdown-item export-chat" data-format="pdf">Export as PDF</a>
+                                    </div>
+                                </div>
+                                <button id="clearChats" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i> Clear Chat
+                                </button>
+                            </div>
+                        </div>
+                        <div id="messageContainer" class="card-body msg_card_body">
+                            <!-- Chat messages will be appended here -->
+                        </div>
+                        <div class="card-footer">
+                            <form id="messageForm" class="input-group">
+                                <input type="text" id="textInput" name="msg" placeholder="Type your message..." class="form-control" required/>
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                    <button type="button" id="voiceBtn" class="btn btn-secondary">
+                                        <i class="fas fa-microphone"></i>
+                                    </button>
+                                </div>
+                            </form>
+                            <!-- Image upload form -->
+                             <form id="upload-form" method="POST" enctype="multipart/form-data">
+                                <div class="input-group">
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input" id="xray_image" name="xray_image">
+                                        <label class="custom-file-label" for="xray_image">Upload X-ray</label>
+                                    </div>
+                                    <select class="form-control" id="task" name="task">
+                                        <option value="brain">Brain</option>
+                                        <option value="lung">Lung</option>
+                                        <option value="skin">Skin</option>
+                                    </select>
+                                    <div class="input-group-append">
+                                        <button id="upload-button" type="submit" class="btn btn-primary">Upload</button>
+                                    </div>
+                                </div>
+                            </form>
+                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <script>
+            $(document).ready(function() {
+                // Function to append message to chat window
+                function appendMessage(message, isUser) {
+                    let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    let messageHtml;
+    
+                    if (isUser) {
+                        messageHtml = `<div class="d-flex justify-content-end mb-4">
+                                            <div class="msg_container_send">${message}
+                                                <span class="msg_time_send">${timeNow}</span>
+                                            </div>
+                                        </div>`;
+                    } else {
+                        messageHtml = `<div class="d-flex justify-content-start mb-4">
+                                            <div class="msg_container">${message}
+                                                <span class="msg_time">${timeNow}</span>
+                                            </div>
+                                        </div>`;
+                    }
+                    $("#messageContainer").append(messageHtml).scrollTop($("#messageContainer")[0].scrollHeight);
+                    saveChatHistory();
+                }
+    
+                function saveChatHistory() {
+                    localStorage.setItem("chatHistory", $("#messageContainer").html());
+                }
+    
+                function loadChatHistory() {
+                    let chatHistory = localStorage.getItem("chatHistory");
+                    if (chatHistory) $("#messageContainer").html(chatHistory);
+                }
+    
+                function clearChat() {
+                    $.post("/clear_chats", function(response) { // Corrected route name to "/clear_chat"
+                        if (response.success) {
+                            localStorage.removeItem("chatHistory");
+                            $("#messageContainer").empty();
+                        }
+                    }).fail(function() {
+                        console.error("Error clearing chats");
+                    });
+                }
+    
+                $("#clearChats").click(function() {
+                    if (confirm("Are you sure you want to clear all chat history?")) clearChat();
+                });
+    
+                loadChatHistory();
+    
+                $("#messageForm").submit(function(event) {
+                    event.preventDefault();
+                    let text = $("#textInput").val().trim();
+                    if (!text) return;
+    
+                    let timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    let userHtml = `<div class="d-flex justify-content-end mb-4">
+                                        <div class="msg_container_send">${text}
+                                            <span class="msg_time_send">${timeNow}</span>
+                                        </div>
+                                    </div>`;
+    
+                    $("#textInput").val("");
+                    appendMessage(text, true); // Append user message
+                    
+                    let loadingHtml = `<div id="loading" class="d-flex justify-content-start mb-4">
+                                        <div class="msg_container">Typing...
+                                            <span class="msg_time">${timeNow}</span>
+                                        </div>
+                                      </div>`;
+                    $("#messageContainer").append(loadingHtml).scrollTop($("#messageContainer")[0].scrollHeight); // Append loading message
+                    saveChatHistory();
+    
+                    $.post("/get_response", { msg: text }, function(data) {
+                        $("#loading").remove();
+                        let botHtml = `<div class="d-flex justify-content-start mb-4">
+                                        <div class="msg_container">${data.bot}
+                                            <span class="msg_time">${timeNow}</span>
+                                        </div>
+                                      </div>`;
+                        appendMessage(data.bot, false); // Append bot response
+                    }).fail(function() {
+                        $("#loading").remove();
+                        appendMessage("Error: Could not connect to the chatbot.", false); // Append error message
+                    });
+                });
+    
+                $(".export-chat").click(function() {
+                    window.location.href = `/export_chat?format=${$(this).data("format")}`;
+                });
+    
+                const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.onresult = function(event) {
+                    $("#textInput").val(event.results[0][0].transcript);
+                    $("#messageForm").submit();
+                };
+    
+                $("#voiceBtn").click(function() {
+                    recognition.start();
+                });
+    
+                // Image upload
+                // $('#upload-form').on('submit', function(e) {
+                //     e.preventDefault();
+    
+                //     var formData = new FormData(this);
+    
+                //     $.ajax({
+                //         url: '/get_response',  // Ensure this is the correct endpoint
+                //         type: 'POST',
+                //         data: formData,
+                //         processData: false,
+                //         contentType: false,
+                //         success: function(response) {
+                //             if (response && response.bot) {
+                //                 appendMessage(response.bot, false);
+                //                 // Optionally display the uploaded image
+                //                 // let imageHtml = `<img src="${response.image_url}" class="uploaded-image">`;
+                //                 // appendMessage(imageHtml, false);
+                //             } else if (response && response.error) {
+                //                 alert('Error: ' + response.error);
+                //             } else {
+                //                 alert('Upload successful but no response received.');
+                //             }
+                //         },
+                //         error: function(xhr, status, error) {
+                //             console.error("Error:", error);
+                //             alert('An error occurred: ' + error);
+                //         }
+                //     });
+                // });
+                $('#upload-form').on('submit', function(e) {
+    e.preventDefault();
+
+    var formData = new FormData(this);
+
+    $.ajax({
+        url: '/get_response',  // Ensure this is the correct endpoint
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function(response) {
+            if (response && response.bot) {
+                appendMessage(response.bot, false);
+            }
+
+            if (response && response.image_url) {
+                let imageHtml = `<div class="d-flex justify-content-start mb-4">
+                                    <div class="msg_container">
+                                        <img src="${response.image_url}" class="uploaded-image">
+                                        <span class="msg_time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                </div>`;
+                $("#messageContainer").append(imageHtml).scrollTop($("#messageContainer")[0].scrollHeight);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error("Error:", error);
+            alert('An error occurred: ' + error);
+        }
+    });
+});
+        
+            // Automatically update the file name in the label
+            $('#xray_image').on('change', function() {
+                var fileName = $(this).val().split('\\').pop();
+                $(this).next('.custom-file-label').addClass("selected").html(fileName);
+            });
+    
+        });
+        </script>
+    </body>
+    </html>
+    
